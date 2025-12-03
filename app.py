@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from sqlalchemy import create_engine, text
+import feedparser
+from textblob import TextBlob
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="F1 Analytics Platform", layout="wide")
@@ -16,7 +18,7 @@ engine = get_db_engine()
 
 # --- SIDEBAR ---
 st.sidebar.title("🏎️ F1 Engineer Hub")
-page = st.sidebar.radio("Select Module:", ["Race Strategy Optimizer", "Driver Telemetry Comparison"])
+page = st.sidebar.radio("Select Module:", ["Race Strategy Optimizer", "Driver Telemetry Comparison", "F1 News Sentiment Analysis"])
 
 # --- MODULE 1: STRATEGY ---
 if page == "Race Strategy Optimizer":
@@ -95,3 +97,43 @@ elif page == "Driver Telemetry Comparison":
         st.plotly_chart(fig_speed, use_container_width=True)
     else:
         st.error("No telemetry data found. Run 'ingest_telemetry.py' first!")
+
+# --- MODULE 3: FAN SENTIMENT  ---
+elif page == "Fan Sentiment Analysis":
+    st.title("Fan & Media Sentiment Analysis")
+    st.markdown("Real-time NLP analysis of global F1 news headlines.")
+    
+    def get_news_sentiment():
+        rss_url = "https://www.autosport.com/rss/feed/f1"
+        feed = feedparser.parse(rss_url)
+        news_data = []
+        for entry in feed.entries:
+            blob = TextBlob(entry.title)
+            sentiment = blob.sentiment.polarity
+            mood = "Positive" if sentiment > 0.1 else "Negative" if sentiment < -0.1 else "Neutral"
+            news_data.append({"Title": entry.title, "Mood": mood, "Score": sentiment, "Link": entry.link})
+        return pd.DataFrame(news_data)
+
+    with st.spinner("Analyzing Global Media Sentiment..."):
+        df_news = get_news_sentiment()
+        
+    # KPI Cards
+    avg_sentiment = df_news['Score'].mean()
+    overall_mood = "Positive" if avg_sentiment > 0 else "Negative"
+    
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("Headlines Analyzed", len(df_news))
+    kpi2.metric("Overall Media Mood", overall_mood)
+    kpi3.metric("Sentiment Score", f"{avg_sentiment:.3f}")
+    
+    # Visualization: Sentiment Distribution
+    st.subheader("Sentiment Distribution")
+    fig_sent = px.pie(df_news, names='Mood', title="Media Sentiment Split", 
+                     color='Mood', color_discrete_map={"Positive": "#00CC96", "Negative": "#EF553B", "Neutral": "#636EFA"},
+                     template="plotly_dark")
+    st.plotly_chart(fig_sent, use_container_width=True)
+    
+    # News Feed
+    st.subheader("Latest Headlines")
+    for index, row in df_news.iterrows():
+        st.markdown(f"**{row['Mood']}** | [{row['Title']}]({row['Link']})")

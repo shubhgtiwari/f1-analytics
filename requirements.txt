@@ -5,3 +5,5 @@ fastf1
 sqlalchemy
 psycopg2-binary
 statsmodels
+feedparser
+textblob
