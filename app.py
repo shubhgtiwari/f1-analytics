@@ -145,7 +145,7 @@ elif page == "Championship Simulator":
     st.markdown("A **Monte Carlo Simulation** that runs 10,000 race scenarios to predict the World Champion.")
 
     # User Inputs 
-    sim_counts = st.slider("Number of Simulations", min_value=100, max_value=10000, value=1000)
+    sim_count = st.slider("Number of Simulations", min_value=100, max_value=10000, value=1000)
     
     if st.button("Run Prediction Model"):
         with st.spinner(f"Simulating {sim_count} seasons..."):
