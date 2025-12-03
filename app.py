@@ -99,7 +99,7 @@ elif page == "Driver Telemetry Comparison":
         st.error("No telemetry data found. Run 'ingest_telemetry.py' first!")
 
 # --- MODULE 3: FAN SENTIMENT  ---
-elif page == "Fan Sentiment Analysis":
+elif page == "F1 News Sentiment Analysis":
     st.title("Fan & Media Sentiment Analysis")
     st.markdown("Real-time NLP analysis of global F1 news headlines.")
     
