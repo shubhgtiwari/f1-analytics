@@ -25,7 +25,8 @@ page = st.sidebar.radio("Select Module:", [
     "Driver Telemetry Comparison", 
     "F1 News Sentiment Analysis", 
     "Championship Simulator",
-    "Sponsorship Media Value Estimator"
+    "Sponsorship Media Value Estimator",
+    "Weather Impact Analysis"
 ])
 
 # --- MODULE 1: STRATEGY ---
@@ -214,3 +215,52 @@ elif page == "Sponsorship Media Value Estimator":
     # 3. Data Table
     with st.expander("View Detailed ROI Data"):
         st.dataframe(df_roi)
+
+# --- MODULE 6: WEATHER IMPACT ---
+elif page == "Weather Impact Analysis":
+    st.title("Weather Impact Model")
+    st.markdown("Correlating **Track Temperature** with **Race Pace**.")
+    
+    # 1. Fetch Weather Data
+    query_weather = text("SELECT time_offset_seconds, track_temp, air_temp, humidity FROM weather WHERE race_id = 1")
+    # 2. Fetch Lap Data (Average Lap Time per Lap)
+    query_laps = text("""
+        SELECT lap_number, AVG(lap_time_seconds) as avg_pace 
+        FROM lap_times 
+        WHERE race_id = 1 AND lap_time_seconds < 105 
+        GROUP BY lap_number 
+        ORDER BY lap_number
+    """)
+    
+    with engine.connect() as conn:
+        df_weather = pd.read_sql(query_weather, conn)
+        df_laps = pd.read_sql(query_laps, conn)
+        
+    # 3. Visualization: Track Temp vs. Pace
+    # dual-axis chart
+    st.subheader("Track Temperature Evolution vs. Race Pace")
+    from plotly.subplots import make_subplots
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Scatter(x=df_weather['time_offset_seconds']/60, y=df_weather['track_temp'], name="Track Temp (°C)", line=dict(color='#FF5733')),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(x=df_laps['lap_number'] * 1.5, y=df_laps['avg_pace'], name="Avg Lap Time (s)", line=dict(color='#33CFFF', dash='dot')),
+        secondary_y=True
+    )
+
+    fig.update_layout(
+        title_text="Thermal Degradation Correlation",
+        template="plotly_dark",
+        xaxis_title="Race Duration (Minutes)"
+    )
+    
+    # Set y-axes titles
+    fig.update_yaxes(title_text="Temperature (°C)", secondary_y=False)
+    fig.update_yaxes(title_text="Lap Time (s)", secondary_y=True)
+
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Correlation Metric
+    st.info("Insight: In Bahrain 2024, as track temperature dropped (night race), lap times stabilized despite tyre wear.")
